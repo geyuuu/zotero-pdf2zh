@@ -14,8 +14,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      # 将 GITHUB_TOKEN 设置为环境变量，以便后续的 gh 命令使用
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 使用 PAT（存为仓库 secret RELEASE_TOKEN）而不是自动的 GITHUB_TOKEN，
+      # 因为 fork 仓库的 GITHUB_TOKEN 即使设了 Read/Write 也常常无法创建 Release。
+      # scaffold 和后面的 gh 命令都读取这个环境变量。
+      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -27,6 +27,35 @@
 
 </div>
 
+## ✨ 插件内自动启动后端（本 fork 新增，无需手动开服务）
+
+本 fork 在原有「手动启动 `server.py`」之外，新增了 **由插件在 Zotero 内自动管理后端** 的能力，让你不用再开终端：
+
+- **自动启动/关闭**：翻译时插件会自动在后台拉起翻译后端（`pdf2zh_next`），退出 Zotero 时自动关闭；无需手动运行 `server.py`。
+- **内置 server**：`server/` 已随插件一起打包进 xpi，**设置里的「server 文件夹路径」留空即可**——首次翻译时插件会自动把内置 server 解压到 Zotero 数据目录（`<数据目录>/pdf2zh-server/`）并使用。
+- **实时进度入口**：主工具栏新增 PDF2zh 图标按钮（右键菜单、设置页也有「查看翻译进度」），点击用浏览器打开后端自带的实时进度页（进度条 / 历史 / 下载）。
+
+> ⚠️ 翻译后端是 Python 程序（依赖 BabelDOC/PyMuPDF/ONNX 等原生库），**无法嵌入 Zotero 的 JS 引擎直接运行**，因此仍需本机装过一次 **uv**（或 Python）。"整合进插件"指的是由插件自动启动并管理后端进程，而非在 JS 里跑 Python。
+
+### 前置条件（仅需一次）
+
+```shell
+# macOS/Linux
+wget -qO- https://astral.sh/uv/install.sh | sh
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### 使用方法
+
+1. 安装插件 xpi 并重启 Zotero。
+2. 插件设置 →「本地翻译服务」：勾选「翻译前自动启动本地服务」，`server 文件夹路径` **留空**（用内置），启动方式保持 `uv`（uv 路径留空会自动查找）。
+3. 右键 PDF → PDF2zh → 翻译。首次会自动启动后端并下载依赖（需几分钟），之后即用即翻。
+
+> 高级：想用自己的 `server/` 目录或 conda/python，在「本地翻译服务」里指定 `server 文件夹路径`、把启动方式切到 `custom` 并填自定义命令即可（会覆盖内置 server）。若你更习惯手动启动服务，也可关闭「自动启动」，按下方[安装说明](#安装说明)手动运行 `server.py`。
+
+---
+
 ## 📖 目录
 
 - [如何使用本插件](#如何使用本插件)
@@ -571,6 +600,33 @@ source ~/.zshrc
 source ~/.bashrc
 ```
 4. 之后只需在终端输入 `pdf2zh-start` 即可一键启动
+
+# 🛠️ 开发与发布（GitHub Actions）
+
+本仓库通过 GitHub Actions 自动构建并发布插件 xpi。
+
+- **CI**（`.github/workflows/ci.yml`）：向 `main` 推送或提 PR 时，自动在 `plugin/` 里跑 `npm run lint:check` 与 `npm run build`，并上传构建产物。
+- **Release**（`.github/workflows/release.yml`）：推送 `v*` 形式的 tag 时，自动 `npm run build` + `npm run release`，把打好的 xpi 和 `update.json` 发布到 GitHub Release（`server.zip` 也会一并上传）。
+
+发布一个新版本：
+
+```shell
+# 1. 修改 plugin/package.json 的 version
+# 2. 打 tag 并推送(名字以 v 开头)
+git tag v4.0.4
+git push origin v4.0.4
+# 之后 Actions 会自动构建并创建 Release
+```
+
+本地构建（需 **Node ≥ 22**，`zotero-plugin-scaffold` 要求）：
+
+```shell
+cd plugin
+npm install
+npm run build      # 产物在 plugin/build/*.xpi
+```
+
+> 说明：`npm run build`/`start`/`release` 前会自动执行 `scripts/bundle-server.mjs`，把仓库根目录的 `server/`（去掉 5MB 的 README PDF、`doc/`、`bo.mp3` 等）内置进 xpi，供插件首次运行时自动解压使用。生成的 `plugin/addon/server/` 与 `plugin/addon/server-manifest.json` 已被 gitignore，不入库。
 
 # 常见问题（FAQ）
 

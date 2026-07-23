@@ -38,6 +38,8 @@ features:
     details: Provide Docker deployment for easy setup.
   - title: 🎯 Zotero Integration
     details: Seamlessly integrate into Zotero right-click menu, support batch translation.
+  - title: 🖥️ In-Zotero Auto-Launch (this fork)
+    details: No terminal needed — the plugin auto-starts and manages the backend inside Zotero; the server is bundled in the xpi (leave the path empty), with a toolbar button for live progress.
 
 ---
 

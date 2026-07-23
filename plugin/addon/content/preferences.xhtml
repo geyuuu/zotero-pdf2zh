@@ -35,6 +35,107 @@
                 检查连接
             </html:button>
         </hbox>
+        <!-- 本地翻译服务(自动拉起后端), 无需手动开终端 -->
+        <html:h3 data-l10n-id="pref-local-service" />
+        <hbox align="center" flex="1">
+            <checkbox
+                id="zotero-prefpane-__addonRef__-autoStartServer"
+                preference="extensions.zotero.__addonRef__.autoStartServer"
+            />
+            <html:label
+                for="zotero-prefpane-__addonRef__-autoStartServer"
+                data-l10n-id="pref-autoStart"
+            />
+        </hbox>
+        <hbox align="center" flex="1">
+            <html:label
+                for="zotero-prefpane-__addonRef__-serverDir"
+                data-l10n-id="pref-serverDir"
+            />
+            <html:input
+                id="zotero-prefpane-__addonRef__-serverDir"
+                preference="extensions.zotero.__addonRef__.serverDir"
+                type="text"
+                placeholder="留空使用插件内置 server"
+                style="width: 320px"
+            />
+            <html:button
+                id="zotero-prefpane-__addonRef__-serverDir-browse"
+                data-l10n-id="pref-browse"
+                style="margin-left: 8px"
+            >
+                浏览
+            </html:button>
+        </hbox>
+        <hbox align="center" flex="1">
+            <html:label
+                for="zotero-prefpane-__addonRef__-launchMode"
+                data-l10n-id="pref-launchMode"
+            />
+            <html:select
+                id="zotero-prefpane-__addonRef__-launchMode"
+                preference="extensions.zotero.__addonRef__.launchMode"
+                style="width: 150px"
+            >
+                <html:option value="uv">uv</html:option>
+                <html:option value="custom">custom</html:option>
+            </html:select>
+        </hbox>
+        <hbox align="center" flex="1" class="launch-uv">
+            <html:label
+                for="zotero-prefpane-__addonRef__-uvPath"
+                data-l10n-id="pref-uvPath"
+            />
+            <html:input
+                id="zotero-prefpane-__addonRef__-uvPath"
+                preference="extensions.zotero.__addonRef__.uvPath"
+                type="text"
+                style="width: 320px"
+            />
+        </hbox>
+        <hbox
+            align="center"
+            flex="1"
+            class="launch-custom"
+            style="display: none"
+        >
+            <html:label
+                for="zotero-prefpane-__addonRef__-customCommand"
+                data-l10n-id="pref-customCommand"
+            />
+            <html:input
+                id="zotero-prefpane-__addonRef__-customCommand"
+                preference="extensions.zotero.__addonRef__.customCommand"
+                type="text"
+                style="width: 380px"
+            />
+        </hbox>
+        <hbox align="center" flex="1">
+            <html:button
+                id="zotero-prefpane-__addonRef__-server-start"
+                data-l10n-id="pref-server-start"
+            >
+                启动服务
+            </html:button>
+            <html:button
+                id="zotero-prefpane-__addonRef__-server-stop"
+                data-l10n-id="pref-server-stop"
+                style="margin-left: 8px"
+            >
+                停止服务
+            </html:button>
+            <html:button
+                id="zotero-prefpane-__addonRef__-server-progress"
+                data-l10n-id="pref-view-progress"
+                style="margin-left: 8px"
+            >
+                查看翻译进度
+            </html:button>
+            <html:label
+                id="zotero-prefpane-__addonRef__-server-status"
+                style="margin-left: 10px"
+            />
+        </hbox>
         <!-- 设置翻译的目标语言和源语言 -->
         <hbox align="center" flex="1">
             <html:label

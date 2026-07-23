@@ -4,6 +4,7 @@ import { PDF2zhHelperFactory } from "./modules/pdf2zhHelper";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 import { registerPrefsScripts, initTableUI } from "./modules/preferenceScript";
+import { ServerManager } from "./modules/serverManager";
 
 async function onStartup() {
     await Promise.all([
@@ -22,6 +23,8 @@ async function onMainWindowLoad(win: Window): Promise<void> {
     addon.data.ztoolkit = createZToolkit(); // Create ztoolkit for every window
     // 注册右键菜单, 显示加载弹窗
     PDF2zhUIFactory.registerRightClickMenuItem();
+    // 主工具栏"查看翻译进度"按钮
+    PDF2zhUIFactory.registerToolbarButton(win);
     await Zotero.Promise.delay(200);
     // 渲染偏好设置的LLM API表格, 避免第一次打开Preference页面时LLM Config条目未完全加载
     // TOCHECK: 目前可以有效解决问题, 但是关闭Preference后这个初始化的内容不会被删除吗??
@@ -52,11 +55,17 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 async function onMainWindowUnload(win: Window): Promise<void> {
     ztoolkit.unregisterAll();
     addon.data.dialog?.window?.close();
+    // 本地服务是全局的, 仅当关闭的是最后一个主窗口时才停止(避免关闭副窗口误杀)
+    if (Zotero.getMainWindows().length <= 1) {
+        void ServerManager.getInstance().stopServer();
+    }
 }
 
 function onShutdown(): void {
     ztoolkit.unregisterAll();
     addon.data.dialog?.window?.close();
+    // 退出时停止由本插件启动的本地服务(外部/远程服务不受影响)
+    void ServerManager.getInstance().stopServer();
     // Remove addon object
     addon.data.alive = false;
     // @ts-ignore - Plugin instance is not typed
@@ -96,6 +105,9 @@ function onDialogEvents(type: string) {
             break;
         case "comparePDF":
             PDF2zhHelperFactory.processWorker("compare");
+            break;
+        case "viewProgress":
+            ServerManager.getInstance().openProgressPage();
             break;
         default:
             break;

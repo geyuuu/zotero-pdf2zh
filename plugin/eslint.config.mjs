@@ -10,6 +10,7 @@ export default tseslint.config(
             "dist/**",
             "node_modules/**",
             "scripts/",
+            "addon/server/**",
             "addon/content/preferences.xhtml",
         ],
     },

@@ -4,6 +4,18 @@ pref-help = { $name } Build { $version } { $time }
 pref-config          = Zoterp PDF2zh Configuration
 pref-config-basic    = PDF2zh Translation Config
 pref-serverip        = Python Server IP Address
+
+# Local translation service (auto-launch backend)
+pref-local-service   = Local Translation Service (no terminal needed)
+pref-autoStart       = Auto-start local service before translating
+pref-serverDir       = server folder path (empty = use bundled)
+pref-browse          = Browse
+pref-launchMode      = Launch mode
+pref-uvPath          = uv executable path (optional, auto-detected if empty)
+pref-customCommand   = Custom launch command (quote paths containing spaces)
+pref-server-start    = Start service
+pref-server-stop     = Stop service
+pref-view-progress   = View progress
 pref-engine          = Translation Engine
 pref-service         = Translation Service
 pref-threadNum       = Translation Threads Num

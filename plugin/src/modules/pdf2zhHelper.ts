@@ -3,6 +3,7 @@ import axios from "axios";
 import { FileProcessor } from "./pdf2zhFileProcessor";
 import { ServerConfig, PDFType, PDFOperationOptions } from "./pdf2zhTypes";
 import { loadLLMApisFromPrefs } from "./preferenceScript";
+import { ServerManager } from "./serverManager";
 
 export class PDF2zhHelperFactory {
     // 添加重试配置(其实不需要重试)
@@ -19,6 +20,8 @@ export class PDF2zhHelperFactory {
             ztoolkit.getGlobal("alert")("请先选择一个条目或附件。");
             return;
         }
+        // 翻译前惰性拉起本地服务(不会抛异常; 失败也继续, 以便手动/远程服务仍可用)
+        await ServerManager.getInstance().ensureServerRunning();
         // 新增了显示处理进度窗口
         const progressWindow = new ztoolkit.ProgressWindow(
             "PDF处理",

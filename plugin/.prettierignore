@@ -5,5 +5,10 @@ node_modules
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+# 由 scripts/bundle-server.mjs 生成的内置 server(含 .py/.toml 等 prettier 不支持的文件)
+addon/server
+addon/server-manifest.json
+# 构建过程产生的 AST 转储副产物
+ast.json
 # *.xhtml
 # *.py

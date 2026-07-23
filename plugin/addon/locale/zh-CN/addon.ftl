@@ -7,3 +7,4 @@ prefs-menu-translate = 翻译PDF
 prefs-menu-cut = 裁剪PDF
 prefs-menu-compare = 双语对照
 prefs-menu-crop-compare = 双语对照(裁剪后拼接)
+prefs-menu-progress = 查看翻译进度

@@ -1,6 +1,11 @@
 build
 logs
 node_modules
+# 由 scripts/bundle-server.mjs 在构建前生成(内置 server), 不提交
+addon/server
+addon/server-manifest.json
+# 构建副产物
+ast.json
 pnpm-lock.yaml
 yarn.lock
 .DS_Store

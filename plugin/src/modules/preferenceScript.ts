@@ -7,6 +7,7 @@ import {
     formatExtraDataForDisplay,
 } from "./llmApiManager";
 import axios from "axios";
+import { ServerManager } from "./serverManager";
 
 export async function registerPrefsScripts(_window: Window) {
     if (!addon.data.prefs) {
@@ -113,6 +114,57 @@ function bindPrefEvents() {
         .querySelector(`#zotero-prefpane-${config.addonRef}-checkConnection`)
         ?.addEventListener("click", async () => {
             await checkServerConnection();
+        });
+
+    // ********************* 本地服务(自动拉起后端) *********************
+    // server 文件夹选择(目录选择器)
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-serverDir-browse`)
+        ?.addEventListener("click", async () => {
+            const dir = await new ztoolkit.FilePicker(
+                "选择 server 文件夹 (含 server.py)",
+                "folder",
+            ).open();
+            if (dir) {
+                setPref("serverDir", dir);
+                const input = doc.getElementById(
+                    `zotero-prefpane-${config.addonRef}-serverDir`,
+                ) as HTMLInputElement | null;
+                if (input) input.value = dir;
+            }
+        });
+
+    // 启动方式切换(uv/custom)显隐
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-launchMode`)
+        ?.addEventListener("command", (e: Event) => {
+            handleLaunchModeChange(
+                (e.target as HTMLSelectElement).value || "uv",
+            );
+        });
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-launchMode`)
+        ?.addEventListener("change", (e: Event) => {
+            handleLaunchModeChange(
+                (e.target as HTMLSelectElement).value || "uv",
+            );
+        });
+
+    // 启动/停止服务按钮
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-server-start`)
+        ?.addEventListener("click", async () => {
+            await startLocalServer();
+        });
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-server-stop`)
+        ?.addEventListener("click", async () => {
+            await stopLocalServer();
+        });
+    doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-server-progress`)
+        ?.addEventListener("click", () => {
+            ServerManager.getInstance().openProgressPage();
         });
 
     // ********************* LLM API 表格 *********************
@@ -515,7 +567,77 @@ function initializeEngineConfig() {
             const currentEngine = engineSelect.value;
             handleEngineChange(currentEngine);
         }
+        // 初始化本地服务区域: 启动方式显隐 + 状态标签
+        handleLaunchModeChange(getPref("launchMode")?.toString() || "uv");
+        void refreshServerStatusLabel();
     }, 100);
+}
+
+// 启动方式切换(uv/custom): 控制 .launch-uv / .launch-custom 显隐
+function handleLaunchModeChange(mode: string) {
+    const { window } = addon.data.prefs ?? {};
+    if (!window) return;
+    const uvRows = window.document.getElementsByClassName("launch-uv");
+    for (const el of uvRows as any as HTMLElement[]) {
+        el.style.display = mode === "custom" ? "none" : "block";
+    }
+    const customRows = window.document.getElementsByClassName("launch-custom");
+    for (const el of customRows as any as HTMLElement[]) {
+        el.style.display = mode === "custom" ? "block" : "none";
+    }
+}
+
+// 刷新状态标签
+async function refreshServerStatusLabel() {
+    const { window } = addon.data.prefs ?? {};
+    if (!window) return;
+    const label = window.document.getElementById(
+        `zotero-prefpane-${config.addonRef}-server-status`,
+    ) as HTMLElement | null;
+    if (!label) return;
+    const serverUrl = getPref("new_serverip")?.toString() || "";
+    let text = "状态: 未知";
+    try {
+        const resp = await axios.get(`${serverUrl}/health`, { timeout: 3000 });
+        if (resp.status === 200 && resp.data) {
+            text = `状态: 运行中 (v${resp.data.version || "?"})`;
+        } else {
+            text = "状态: 未运行";
+        }
+    } catch (e) {
+        text = "状态: 未运行";
+    }
+    label.textContent = text;
+}
+
+// 启动服务按钮
+async function startLocalServer() {
+    const { window } = addon.data.prefs ?? {};
+    const label = window?.document.getElementById(
+        `zotero-prefpane-${config.addonRef}-server-status`,
+    ) as HTMLElement | null;
+    if (label) label.textContent = "状态: 正在启动…";
+    try {
+        await ServerManager.getInstance().startServer();
+    } catch (e) {
+        ztoolkit.getGlobal("alert")(
+            "启动本地服务失败:\n" +
+                (e instanceof Error ? e.message : String(e)),
+        );
+    }
+    await refreshServerStatusLabel();
+}
+
+// 停止服务按钮
+async function stopLocalServer() {
+    await ServerManager.getInstance().stopServer();
+    const { window } = addon.data.prefs ?? {};
+    const label = window?.document.getElementById(
+        `zotero-prefpane-${config.addonRef}-server-status`,
+    ) as HTMLElement | null;
+    if (label) label.textContent = "状态: 已停止";
+    // 稍等再复核一次(用户可能仍有外部服务在跑)
+    setTimeout(() => void refreshServerStatusLabel(), 800);
 }
 
 // 引擎切换处理函数

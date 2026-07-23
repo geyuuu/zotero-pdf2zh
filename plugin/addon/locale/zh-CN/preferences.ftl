@@ -4,6 +4,18 @@ pref-help = { $name } Build { $version } { $time }
 pref-config          = Zotero PDF2zh配置
 pref-config-basic    = PDF2zh翻译配置
 pref-serverip        = Python服务器IP地址
+
+# 本地翻译服务(自动拉起后端)
+pref-local-service   = 本地翻译服务(无需手动开终端)
+pref-autoStart       = 翻译前自动启动本地服务
+pref-serverDir       = server 文件夹路径(留空则用插件内置)
+pref-browse          = 浏览
+pref-launchMode      = 启动方式
+pref-uvPath          = uv 可执行文件路径(可选, 留空自动查找)
+pref-customCommand   = 自定义启动命令(路径含空格请用引号)
+pref-server-start    = 启动服务
+pref-server-stop     = 停止服务
+pref-view-progress   = 查看翻译进度
 pref-engine          = 翻译引擎
 pref-service         = 翻译服务
 pref-threadNum       = 翻译线程数

@@ -1,6 +1,14 @@
 /* eslint-disable no-undef */
 pref("__prefsPrefix__.new_serverip", "http://localhost:8890");
 
+// ── 本地翻译服务(自动拉起后端) Local Service (auto-launch backend) ──
+pref("__prefsPrefix__.autoStartServer", true); // 翻译前自动启动本地服务
+pref("__prefsPrefix__.serverDir", ""); // 含 server.py 的文件夹绝对路径(用户设置)
+pref("__prefsPrefix__.launchMode", "uv"); // "uv" | "custom"
+pref("__prefsPrefix__.uvPath", ""); // 可选: uv 可执行文件绝对路径
+pref("__prefsPrefix__.customCommand", ""); // 自定义启动命令(conda/纯 python 逃生口)
+pref("__prefsPrefix__.serverStartTimeout", 180); // 等待 /health 的秒数
+
 pref("__prefsPrefix__.sourceLang", "en");
 pref("__prefsPrefix__.targetLang", "zh-CN");
 pref("__prefsPrefix__.sourceLangSelect", "en");

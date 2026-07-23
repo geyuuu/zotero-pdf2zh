@@ -39,6 +39,8 @@ features:
     details: 提供 Docker 部署方案，便于快速部署和管理。
   - title: 🎯 Zotero 集成
     details: 无缝集成到 Zotero 右键菜单，支持批量翻译多个 PDF 文件。
+  - title: 🖥️ 插件内自动启动（本 fork）
+    details: 无需手动开终端启动服务，插件自动在 Zotero 内拉起并管理翻译后端；server 已内置进 xpi，路径留空即用，工具栏可一键查看实时进度。
 
 ---
 

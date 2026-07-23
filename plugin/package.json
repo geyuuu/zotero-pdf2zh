@@ -20,10 +20,14 @@
     "homepage": "https://github.com/guaguastandup/zotero-pdf2zh#readme",
     "license": "AGPL-3.0-or-later",
     "scripts": {
+        "bundle:server": "node scripts/bundle-server.mjs",
+        "prestart": "node scripts/bundle-server.mjs",
         "start": "zotero-plugin serve",
+        "prebuild": "node scripts/bundle-server.mjs",
         "build": "tsc --noEmit && zotero-plugin build",
         "lint:check": "prettier --check . && eslint .",
         "lint:fix": "prettier --write . && eslint . --fix",
+        "prerelease": "node scripts/bundle-server.mjs",
         "release": "zotero-plugin release",
         "test": "echo \"Error: no test specified\" && exit 1",
         "update-deps": "npm update --save"

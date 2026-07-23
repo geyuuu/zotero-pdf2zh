@@ -36,6 +36,13 @@ jobs:
         run: |
           cd plugin/ && npm run build
 
+      # 允许对同一个版本号重复发布：scaffold 用 createRelease，若同名 Release 已存在
+      # 会报 already_exists 而失败。发布前先删掉旧的同版本 Release（保留 tag）。
+      - name: Delete existing release for this version (allow re-release)
+        run: |
+          VERSION=$(node -p "require('./plugin/package.json').version")
+          gh release delete "v$VERSION" --yes || echo "no existing release v$VERSION, skip"
+
       - name: Release plugin to GitHub
         run: |
           cd plugin/ && npm run release

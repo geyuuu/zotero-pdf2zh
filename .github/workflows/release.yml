@@ -42,11 +42,17 @@ jobs:
           cd plugin/ && npm run release
           sleep 1s
 
-      # ------------------- 新增的步骤 -------------------
-      - name: Upload server.zip to Release
-        # 使用 GitHub CLI (gh) 将根目录的 server.zip 上传到刚刚创建的 release 中
-        # ${{ github.ref_name }} 会自动获取触发工作流程的 tag 名称 (例如 v1.2.3)
-        run: gh release upload ${{ github.ref_name }} server.zip
+      # ------------------- 现打包 server/ 并上传 -------------------
+      - name: Zip server dir and upload to Release
+        # 现场把仓库根目录的 server/ 打包成 server.zip（CI checkout 只含被跟踪文件，
+        # 被 .gitignore 忽略的 config.json / venv 等不会进包），再上传到 scaffold
+        # 刚创建的 Release。Release 名按 package.json 版本推导（scaffold 用 v%s），
+        # 这样即使触发的 git tag 名和版本号写法不同也能对上。
+        run: |
+          rm -f server.zip
+          zip -r server.zip server
+          VERSION=$(node -p "require('./plugin/package.json').version")
+          gh release upload "v$VERSION" server.zip --clobber
       # ----------------------------------------------------
 
       - name: Notify release

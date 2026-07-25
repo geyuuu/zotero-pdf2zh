@@ -355,6 +355,16 @@ export class PDF2zhHelperFactory {
         const shortTitle = targetItem.getField("shortTitle");
         if (shortTitle && shortTitle.length > 0) {
             newTitle = shortTitle + "-" + service + "-" + type;
+        } else {
+            // 父条目未填写短标题时, 使用原PDF文件名(不带.pdf)作为前缀
+            const attachItem = await this.getAttachmentItem(item);
+            const originalPath = attachItem ? attachItem.getFilePath() : false;
+            if (originalPath) {
+                const pdfBaseName = PathUtils.filename(
+                    originalPath.toString(),
+                ).replace(/\.pdf$/i, "");
+                newTitle = pdfBaseName + "-" + service + "-" + type;
+            }
         }
         // parentItemID and collections cannot both be provided
         const attachment = await Zotero.Attachments.importFromFile({

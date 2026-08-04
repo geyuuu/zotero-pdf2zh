@@ -352,11 +352,12 @@ export class PDF2zhHelperFactory {
             targetItem = Zotero.Items.get(parentItemID);
         }
         let newTitle = service + "-" + type;
-        const shortTitle = targetItem.getField("shortTitle");
-        if (shortTitle && shortTitle.length > 0) {
-            newTitle = shortTitle + "-" + service + "-" + type;
+        // 直接使用Zotero条目标题作为前缀
+        const itemTitle = targetItem.getField("title");
+        if (itemTitle && itemTitle.length > 0) {
+            newTitle = itemTitle + "-" + service + "-" + type;
         } else {
-            // 父条目未填写短标题时, 使用原PDF文件名(不带.pdf)作为前缀
+            // 条目未填写标题时, 使用原PDF文件名(不带.pdf)作为前缀
             const attachItem = await this.getAttachmentItem(item);
             const originalPath = attachItem ? attachItem.getFilePath() : false;
             if (originalPath) {

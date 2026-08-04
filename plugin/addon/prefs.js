@@ -51,7 +51,7 @@ pref("__prefsPrefix__.translateTableText", false);
 pref("__prefsPrefix__.onlyIncludeTranslatedPage", false); // not used
 
 // generate
-pref("__prefsPrefix__.mono", true);
+pref("__prefsPrefix__.mono", false);
 pref("__prefsPrefix__.dual", true);
 pref("__prefsPrefix__.mono-cut", false);
 pref("__prefsPrefix__.dual-cut", false);
@@ -60,7 +60,7 @@ pref("__prefsPrefix__.compare", false);
 
 // generate open
 pref("__prefsPrefix__.mono-open", false);
-pref("__prefsPrefix__.dual-open", false);
+pref("__prefsPrefix__.dual-open", true);
 pref("__prefsPrefix__.mono-cut-open", false);
 pref("__prefsPrefix__.dual-cut-open", false);
 pref("__prefsPrefix__.crop-compare-open", false);

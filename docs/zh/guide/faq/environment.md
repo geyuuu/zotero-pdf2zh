@@ -133,7 +133,7 @@ pip install onnx==1.16.1
 ### 解决方案
 
 1. **确认 Zotero 版本**
-   - 插件目前支持 Zotero 7 和 Zotero 8
+   - 插件目前支持 Zotero 7 ~ Zotero 10
    - Zotero 8 适配由 @[Aphcity](https://github.com/Aphcity) 完成
 
 2. **下载正确的插件版本**

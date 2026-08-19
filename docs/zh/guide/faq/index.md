@@ -39,7 +39,7 @@
 **常见问题**：
 - 需要什么前置条件？
   - Python 3.12.0 - [下载](https://www.python.org/downloads/)
-  - Zotero 8 - [下载](https://www.zotero.org/download/)
+  - Zotero 7 ~ 10 - [下载](https://www.zotero.org/download/)
 - Windows 用户需要管理员权限吗？
   - 是，请使用管理员身份运行 cmd.exe
 

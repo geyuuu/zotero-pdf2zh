@@ -5,7 +5,7 @@ This guide will walk you through the installation and configuration of the Zoter
 ::: tip Before You Begin
 Make sure you have installed:
 - **Python 3.12.0** - [Download](https://www.python.org/downloads/)
-- **Zotero 7** or **Zotero 8** - [Download](https://www.zotero.org/download/)
+- **Zotero 7 – 10** - [Download](https://www.zotero.org/download/)
 :::
 
 ---

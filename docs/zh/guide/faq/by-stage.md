@@ -10,7 +10,7 @@
 
 **需要准备**：
 - [Python 3.12.0](https://www.python.org/downloads/)
-- [Zotero 8](https://www.zotero.org/download/)
+- [Zotero 7 ~ 10](https://www.zotero.org/download/)
 - Windows 用户需要管理员权限
 
 **下一步**：[安装指南](../installation)
@@ -62,7 +62,7 @@
 
 **常见问题**：
 - 插件安装后无反应 → 重启 Zotero
-- 插件版本不兼容 → 确保使用 Zotero 8 和插件 v3.0.x
+- 插件版本不兼容 → 确保 Zotero 版本为 7 ~ 10, 并使用最新版插件
 
 ---
 

@@ -5,7 +5,7 @@
 ::: tip 开始之前
 请确保您已安装：
 - **Python 3.12.0** - [下载链接](https://www.python.org/downloads/) | [安装教程（Windows）](https://www.bilibili.com/video/BV18q4y1R7gW/)
-- **Zotero 7** 或 **Zotero 8** - [下载链接](https://www.zotero.org/download/)
+- **Zotero 7 ~ 10** - [下载链接](https://www.zotero.org/download/)
 :::
 
 ---

@@ -19,7 +19,7 @@ This plugin perfectly preserves original formatting, supports multiple translati
 
 ## Supported Zotero Versions
 
-[![Zotero 8](https://img.shields.io/badge/Zotero-8-blue?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org/download/)
+[![Zotero 7-10](https://img.shields.io/badge/Zotero-7--10-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org/download/)
 
 ## Project Links
 

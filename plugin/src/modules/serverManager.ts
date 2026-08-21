@@ -479,72 +479,215 @@ export class ServerManager {
                 `设置的 server 文件夹中未找到 server.py: ${prefDir}`,
             );
         }
-        const bundled = await this.ensureBundledServer();
-        if (!bundled) {
-            throw new LaunchError(
-                "no-server-dir",
-                "未设置 server 文件夹, 且内置 server 解压失败, 请在设置中手动指定 server 文件夹。",
-            );
-        }
-        return bundled;
+        return await this.ensureBundledServer();
     }
 
-    // 把随 XPI 内置的 server 解压到 Zotero 数据目录, 返回其路径; 失败返回 null。
+    // 把随 XPI 内置的 server 解压到 Zotero 数据目录, 返回其路径。
     // 只在版本变化或缺失时解压, 不触碰已存在的 venv/translated 运行时产物。
-    private async ensureBundledServer(): Promise<string | null> {
-        try {
-            const target = PathUtils.join(
-                Zotero.DataDirectory.dir,
-                "pdf2zh-server",
-            );
-            const manifestText = await Zotero.File.getContentsFromURLAsync(
-                rootURI + "server-manifest.json",
-            );
-            const manifest = JSON.parse(manifestText) as {
-                version: string;
-                files: string[];
-            };
-            if (!manifest.files || manifest.files.length === 0) {
+    // 优先直接读插件资源(打包安装用 nsIZipReader 读 XPI, 开发模式读构建目录):
+    // Zotero 10 起 jar: 地址无法再经 XHR/fetch 读取, 旧的 URL 方式只能作为兜底。
+    private async ensureBundledServer(): Promise<string> {
+        const target = PathUtils.join(
+            Zotero.DataDirectory.dir,
+            "pdf2zh-server",
+        );
+        const errors: string[] = [];
+        const strategies: [string, () => Promise<string>][] = [
+            ["读取插件资源", () => this.extractBundledFromSource(target)],
+            ["读取 rootURI", () => this.extractBundledViaURL(target)],
+        ];
+        for (const [name, run] of strategies) {
+            try {
+                return await run();
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
                 ztoolkit.log(
-                    "[serverManager] 内置 server 清单为空, 未打包 server",
+                    `[serverManager] 内置 server 解压失败(${name}): ${msg}`,
+                    e,
                 );
-                return null;
+                errors.push(`${name}: ${msg}`);
             }
-            const marker = PathUtils.join(target, ".bundled-version");
-            const serverPy = PathUtils.join(target, "server.py");
-            let need = true;
-            if ((await this.exists(serverPy)) && (await this.exists(marker))) {
-                try {
-                    const v = await IOUtils.readUTF8(marker);
-                    if (v.trim() === String(manifest.version)) need = false;
-                } catch (e) {
-                    /* 读不到版本标记则重新解压 */
-                }
-            }
-            if (need) {
-                ztoolkit.log(
-                    `[serverManager] 解压内置 server -> ${target} (v${manifest.version}, ${manifest.files.length} 文件)`,
-                );
-                for (const rel of manifest.files) {
-                    const text = await Zotero.File.getContentsFromURLAsync(
-                        rootURI + "server/" + rel,
+        }
+        throw new LaunchError(
+            "no-server-dir",
+            "未设置 server 文件夹, 且内置 server 解压失败, 请在设置中手动指定 server 文件夹。\n\n" +
+                errors.join("\n"),
+        );
+    }
+
+    // 直接从插件资源解压: 打包安装读 XPI 内的条目, 开发模式从构建目录复制
+    private async extractBundledFromSource(target: string): Promise<string> {
+        const root = this.parseRootURI();
+        if (!root) {
+            throw new Error(`无法解析插件资源位置: ${rootURI}`);
+        }
+        if (root.kind === "file") {
+            const manifest = this.parseServerManifest(
+                await IOUtils.readUTF8(
+                    PathUtils.join(root.dir, "server-manifest.json"),
+                ),
+            );
+            await this.writeBundledFiles(
+                target,
+                manifest,
+                async (rel, outPath) => {
+                    const from = PathUtils.join(
+                        root.dir,
+                        "server",
+                        ...rel.split("/"),
                     );
-                    const outPath = PathUtils.join(target, ...rel.split("/"));
-                    const parent = this.dirname(outPath);
-                    if (parent) {
-                        await IOUtils.makeDirectory(parent, {
-                            createAncestors: true,
-                            ignoreExisting: true,
-                        });
-                    }
-                    await IOUtils.writeUTF8(outPath, text);
-                }
-                await IOUtils.writeUTF8(marker, String(manifest.version));
-            }
+                    await IOUtils.copy(from, outPath);
+                },
+            );
             return target;
+        }
+        const zip = (Components.classes as any)[
+            "@mozilla.org/libjar/zip-reader;1"
+        ].createInstance(Components.interfaces.nsIZipReader) as nsIZipReader;
+        zip.open(Zotero.File.pathToFile(root.xpi));
+        try {
+            const manifest = this.parseServerManifest(
+                this.readZipEntryText(
+                    zip,
+                    root.prefix + "server-manifest.json",
+                ),
+            );
+            await this.writeBundledFiles(target, manifest, async (rel, out) => {
+                const outFile = Zotero.File.pathToFile(out);
+                if (outFile.exists()) {
+                    outFile.remove(false);
+                }
+                zip.extract(root.prefix + "server/" + rel, outFile);
+            });
+            return target;
+        } finally {
+            try {
+                zip.close();
+            } catch (e) {
+                /* ignore */
+            }
+        }
+    }
+
+    // 兜底: 经 rootURI 逐个读取文本(Zotero 7-9 可用, 只能处理文本文件)
+    private async extractBundledViaURL(target: string): Promise<string> {
+        const manifest = this.parseServerManifest(
+            await Zotero.File.getContentsFromURLAsync(
+                rootURI + "server-manifest.json",
+            ),
+        );
+        await this.writeBundledFiles(target, manifest, async (rel, outPath) => {
+            const text = await Zotero.File.getContentsFromURLAsync(
+                rootURI + "server/" + rel,
+            );
+            await IOUtils.writeUTF8(outPath, text);
+        });
+        return target;
+    }
+
+    private parseServerManifest(text: string): {
+        version: string;
+        files: string[];
+    } {
+        const manifest = JSON.parse(text) as {
+            version: string;
+            files: string[];
+        };
+        if (!manifest.files || manifest.files.length === 0) {
+            throw new Error("内置 server 清单为空(打包时未包含 server)");
+        }
+        return manifest;
+    }
+
+    // 版本标记一致则跳过, 否则用 write 回调把清单里的文件逐个落盘
+    private async writeBundledFiles(
+        target: string,
+        manifest: { version: string; files: string[] },
+        write: (rel: string, outPath: string) => Promise<void>,
+    ): Promise<void> {
+        const marker = PathUtils.join(target, ".bundled-version");
+        const serverPy = PathUtils.join(target, "server.py");
+        if ((await this.exists(serverPy)) && (await this.exists(marker))) {
+            try {
+                const v = await IOUtils.readUTF8(marker);
+                if (v.trim() === String(manifest.version)) return;
+            } catch (e) {
+                /* 读不到版本标记则重新解压 */
+            }
+        }
+        ztoolkit.log(
+            `[serverManager] 解压内置 server -> ${target} (v${manifest.version}, ${manifest.files.length} 文件)`,
+        );
+        for (const rel of manifest.files) {
+            const outPath = PathUtils.join(target, ...rel.split("/"));
+            const parent = this.dirname(outPath);
+            if (parent) {
+                await IOUtils.makeDirectory(parent, {
+                    createAncestors: true,
+                    ignoreExisting: true,
+                });
+            }
+            await write(rel, outPath);
+        }
+        await IOUtils.writeUTF8(marker, String(manifest.version));
+    }
+
+    // rootURI: 打包安装为 jar:file:///...xpi!/, 开发模式为 file:///.../build/addon/
+    private parseRootURI():
+        | { kind: "jar"; xpi: string; prefix: string }
+        | { kind: "file"; dir: string }
+        | null {
+        const uri = rootURI || "";
+        const m = /^jar:(.+?)!\/(.*)$/.exec(uri);
+        if (m) {
+            const xpi = this.fileURLToPath(m[1]);
+            return xpi ? { kind: "jar", xpi, prefix: m[2] } : null;
+        }
+        if (uri.startsWith("file://")) {
+            const dir = this.fileURLToPath(uri);
+            return dir ? { kind: "file", dir } : null;
+        }
+        return null;
+    }
+
+    private fileURLToPath(url: string): string | null {
+        try {
+            const fileURL = (Services.io.newURI(url) as any).QueryInterface(
+                Components.interfaces.nsIFileURL,
+            ) as nsIFileURL;
+            return fileURL.file.path || null;
         } catch (e) {
-            ztoolkit.log("[serverManager] 内置 server 解压失败:", e);
             return null;
+        }
+    }
+
+    // 读 XPI 内的文本条目(UTF-8)
+    private readZipEntryText(zip: nsIZipReader, entry: string): string {
+        const stream = zip.getInputStream(entry);
+        const converter = (Components.classes as any)[
+            "@mozilla.org/intl/converter-input-stream;1"
+        ].createInstance(
+            Components.interfaces.nsIConverterInputStream,
+        ) as nsIConverterInputStream;
+        try {
+            converter.init(stream, "UTF-8", 32768, 0xfffd);
+            let out = "";
+            const chunk = { value: "" };
+            while (converter.readString(16384, chunk) !== 0) {
+                out += chunk.value;
+            }
+            return out;
+        } finally {
+            try {
+                converter.close();
+            } catch (e) {
+                /* ignore */
+            }
+            try {
+                stream.close();
+            } catch (e) {
+                /* ignore */
+            }
         }
     }
 

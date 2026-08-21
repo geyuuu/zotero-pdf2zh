@@ -136,7 +136,10 @@ export class PDF2zhHelperFactory {
             // 如果有激活的 LLM API 配置，添加到请求中
             if (llmApiConfig) {
                 requestBody.llm_api = llmApiConfig;
-                ztoolkit.log("llmApiConfig", llmApiConfig);
+                ztoolkit.log(
+                    "llmApiConfig",
+                    this.redactLLMApiConfig(llmApiConfig),
+                );
             }
             const response = await fetch(`${config.serverUrl}/${endpoint}`, {
                 method: "POST",
@@ -458,6 +461,19 @@ export class PDF2zhHelperFactory {
     }
 
     // **************** Utils ****************
+    // Zotero 的 debug output 经常被贴到 issue 里, 打日志前先把 API Key 脱敏,
+    // 只留末 4 位用于辨认是哪一条配置
+    static maskApiKey(key: unknown): string {
+        const s = typeof key === "string" ? key : "";
+        if (!s) return "";
+        return s.length <= 4 ? "****" : `****${s.slice(-4)}`;
+    }
+
+    static redactLLMApiConfig(config: any): any {
+        if (!config || typeof config !== "object") return config;
+        return { ...config, apiKey: this.maskApiKey(config.apiKey) };
+    }
+
     static isTrue(value: string | number | boolean | undefined): boolean {
         if (value == undefined) return false;
         return (

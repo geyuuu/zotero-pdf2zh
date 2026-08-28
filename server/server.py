@@ -298,6 +298,13 @@ class PDFTranslator:
                 print("🔍 [Zotero PDF2zh Server] PDF2zh 开始翻译文件...")
                 fileList = self.translate_pdf(input_path, config, task_id)
                 mono_path, dual_path = fileList[0], fileList[1]
+                # pdf2zh 1.x 无法只生成一种产物, mono 和 dual 总是成对出现。
+                # 只把勾选了的那些返回给插件, 否则没勾的那份也会被挂到条目上。
+                # mono_path / dual_path 仍保留, 下面的裁剪/对照要用作输入。
+                fileList = [path for path, wanted in (
+                    (mono_path, config.mono),
+                    (dual_path, config.dual),
+                ) if wanted]
                 if config.mono_cut:
                     mono_cut_path = self.get_filename_after_process(mono_path, 'mono-cut', engine)
                     self.cropper.crop_pdf(config, mono_path, 'mono', mono_cut_path, 'mono-cut')
@@ -317,13 +324,20 @@ class PDFTranslator:
                 
             elif engine == pdf2zh_next:
                 print("🔍 [Zotero PDF2zh Server] PDF2zh_next 开始翻译文件...")
-                if config.mono_cut or config.mono:
-                    config.no_mono = False
-                if config.dual or config.dual_cut or config.crop_compare or config.compare:
-                    config.no_dual = False
+                # 生成哪几种产物完全由 generate 勾选项决定: mono-cut 需要 mono 原件,
+                # dual-cut/crop-compare/compare 需要 dual 原件。没有任何产物需要的
+                # 那一份直接让 pdf2zh_next 跳过(少渲染一遍), 也不会被挂到条目上。
+                need_mono = config.mono or config.mono_cut
+                need_dual = config.dual or config.dual_cut or config.crop_compare or config.compare
 
-                if config.no_dual and config.no_mono:
-                    raise ValueError("⚠️ [Zotero PDF2zh Server] pdf2zh_next 引擎至少需要生成 mono 或 dual 文件, 请检查 no_dual 和 no_mono 配置项")
+                if not need_mono and not need_dual:
+                    raise ValueError("⚠️ [Zotero PDF2zh Server] 至少需要勾选一种要生成的文件(mono/dual/mono-cut/dual-cut/crop-compare/compare)")
+                if config.no_mono and need_mono:
+                    print("🐲 已勾选 mono 相关产物, 忽略 noMono 设置")
+                if config.no_dual and need_dual:
+                    print("🐲 已勾选 dual 相关产物, 忽略 noDual 设置")
+                config.no_mono = not need_mono
+                config.no_dual = not need_dual
 
                 fileList = []
                 retList = self.translate_pdf_next(input_path, config, task_id)
@@ -332,10 +346,12 @@ class PDFTranslator:
                     dual_path = retList[0]
                 elif config.no_dual:
                     mono_path = retList[0]
-                    fileList.append(mono_path)
+                    if config.mono: # 仅 mono-cut 需要 mono 时不返回 mono 本身
+                        fileList.append(mono_path)
                 else:
                     mono_path, dual_path = retList[0], retList[1]
-                    fileList.append(mono_path)
+                    if config.mono:
+                        fileList.append(mono_path)
                 
                 if config.dual_cut or config.crop_compare or config.compare:
                     LR_dual_path = dual_path.replace('.dual.pdf', '.LR_dual.pdf')
@@ -374,7 +390,11 @@ class PDFTranslator:
                         self.cropper.merge_pdf(TB_dual_path, compare_path)
                         addFileList(fileList, compare_path)
                     else:
-                        print("🐲 无需生成compare文件, 等同于dual文件(Left&Right)")
+                        # LR 模式下 compare 就是左右对照的 dual 文件本身, 无需另外生成。
+                        # 只勾了 compare 没勾 dual 时, 这里得把它补进返回列表, 否则无文件可返回。
+                        print("🐲 LR 模式下 compare 等同于 dual 文件(左右对照), 直接返回该文件")
+                        if LR_dual_path not in fileList:
+                            addFileList(fileList, LR_dual_path)
             else:
                 raise ValueError(f"⚠️ [Zotero PDF2zh Server] 输入了不支持的翻译引擎: {engine}, 目前脚本仅支持: pdf2zh/pdf2zh_next")
             
